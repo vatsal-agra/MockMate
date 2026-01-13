@@ -4,6 +4,11 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+<key>NSCameraUsageDescription</key>
+<string>MockMate needs camera to record interview video.</string>
+<key>NSMicrophoneUsageDescription</key>
+<string>MockMate needs microphone to record interview audio.</string>
+
 	<key>CFBundleDisplayName</key>
 	<string>Mock</string>
 	<key>CFBundleExecutable</key>
