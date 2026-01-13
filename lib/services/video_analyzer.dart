@@ -69,12 +69,18 @@ class VideoAnalyzer {
 
   // Call this repeatedly with MLKit InputImage frames
   Future<void> analyzeFrame(InputImage image) async {
-    if (_busy) return;
+    if (_busy) {
+      print('⏭️ Skipping frame - analyzer busy');
+      return;
+    }
     _busy = true;
 
     try {
       frames++;
+      print('🎬 Analyzing frame #$frames');
+      
       final faces = await _detector.processImage(image);
+      print('👤 Faces detected: ${faces.length}');
 
       if (faces.isNotEmpty) {
         faceFrames++;
@@ -91,6 +97,10 @@ class VideoAnalyzer {
         final rightOpen = f.rightEyeOpenProbability;
         final smile = f.smilingProbability;
 
+        print('  👁️ Left eye: ${leftOpen?.toStringAsFixed(2) ?? "null"}, Right eye: ${rightOpen?.toStringAsFixed(2) ?? "null"}');
+        print('  😊 Smile: ${smile?.toStringAsFixed(2) ?? "null"}');
+        print('  📐 Yaw: ${yaw.toStringAsFixed(1)}°, Roll: ${roll.toStringAsFixed(1)}°');
+
         // Smile metric
         if (smile != null) {
           smileSum += smile.clamp(0, 1);
@@ -106,8 +116,15 @@ class VideoAnalyzer {
 
         if (eyesOk && headOk) {
           eyeContactFrames++;
+          print('  ✅ Good eye contact!');
+        } else {
+          print('  ❌ Poor eye contact (eyes: $eyesOk, head: $headOk)');
         }
+      } else {
+        print('  ⚠️ No face detected in this frame');
       }
+    } catch (e) {
+      print('❌ Error analyzing frame: $e');
     } finally {
       _busy = false;
     }
@@ -180,6 +197,17 @@ class VideoAnalyzer {
     // Always add 1 structure tip (even without transcript)
     tips.add(
         "End with a 1-line conclusion summarizing your key point for a stronger finish.");
+
+    // Debug logging to verify analysis is working
+    print('=== Video Analysis Results ===');
+    print('Frames analyzed: $frames');
+    print('Face detected in: $faceFrames frames');
+    print('Face presence: ${facePresence.toStringAsFixed(1)}%');
+    print('Eye contact: ${eyeContact.toStringAsFixed(1)}%');
+    print('Smile: ${smilePct.toStringAsFixed(1)}%');
+    print('Head stability: ${stability.toStringAsFixed(1)}');
+    print('Total score: ${totalScore.toStringAsFixed(1)}');
+    print('==============================');
 
     return AnalysisResult(
       durationSeconds: durationSeconds,

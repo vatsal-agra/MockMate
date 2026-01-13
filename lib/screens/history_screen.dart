@@ -9,14 +9,26 @@ class HistoryScreen extends StatefulWidget {
   State<HistoryScreen> createState() => _HistoryScreenState();
 }
 
-class _HistoryScreenState extends State<HistoryScreen> {
+class _HistoryScreenState extends State<HistoryScreen>
+    with SingleTickerProviderStateMixin {
   List<MockSession> sessions = [];
   bool loading = true;
+  late AnimationController _animController;
 
   @override
   void initState() {
     super.initState();
+    _animController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
     _load();
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -31,65 +43,439 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text("History"),
+        title: const Text(
+          'History',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () async {
-              await StorageService.clearAll();
-              await _load();
-            },
-            tooltip: "Clear all",
-          )
+          if (sessions.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.delete_outline_rounded),
+              onPressed: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Clear All History?'),
+                    content: const Text(
+                        'This will permanently delete all your sessions.'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancel'),
+                      ),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.red,
+                        ),
+                        child: const Text('Delete'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true) {
+                  await StorageService.clearAll();
+                  await _load();
+                }
+              },
+              tooltip: "Clear all",
+            )
         ],
       ),
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : sessions.isEmpty
-              ? const Center(
-                  child: Text("No sessions yet. Record your first answer!"))
-              : ListView.separated(
-                  itemCount: sessions.length,
-                  separatorBuilder: (_, __) => const Divider(height: 0),
-                  itemBuilder: (context, i) {
-                    final s = sessions[i];
-                    return ListTile(
-                      title:
-                          Text("Score ${s.totalScore.toStringAsFixed(0)}/100"),
-                      subtitle: Text(
-                        "${s.createdAt.toLocal()} • Eye ${s.eyeContactPct.toStringAsFixed(0)}% • Presence ${s.facePresencePct.toStringAsFixed(0)}%",
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF0A0E21),
+              Color(0xFF1D1F33),
+              Color(0xFF0A0E21),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: loading
+              ? const Center(child: CircularProgressIndicator())
+              : sessions.isEmpty
+                  ? _buildEmptyState()
+                  : _buildSessionList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF6C63FF).withOpacity(0.1),
+            ),
+            child: Icon(
+              Icons.history_rounded,
+              size: 64,
+              color: const Color(0xFF6C63FF).withOpacity(0.5),
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'No sessions yet',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Record your first answer to get started!',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.white.withOpacity(0.6),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSessionList() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: sessions.length,
+      itemBuilder: (context, i) {
+        final s = sessions[sessions.length - 1 - i]; // Reverse order
+        return TweenAnimationBuilder<double>(
+          duration: Duration(milliseconds: 300 + (i * 50)),
+          tween: Tween(begin: 0.0, end: 1.0),
+          builder: (context, value, child) {
+            return Transform.translate(
+              offset: Offset(0, 20 * (1 - value)),
+              child: Opacity(
+                opacity: value,
+                child: child,
+              ),
+            );
+          },
+          child: _buildSessionCard(s, i),
+        );
+      },
+    );
+  }
+
+  Widget _buildSessionCard(MockSession s, int index) {
+    final scoreColor = _getScoreColor(s.totalScore);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF1D1F33),
+            const Color(0xFF1D1F33).withOpacity(0.8),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.1),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () => _showSessionDetails(s),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
                       ),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () {
-                        // MVP: just show tips in a dialog
-                        showDialog(
-                          context: context,
-                          builder: (_) => AlertDialog(
-                            title: Text(
-                                "Session ${s.totalScore.toStringAsFixed(0)}/100"),
-                            content: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: s.tips
-                                  .map((t) => Padding(
-                                        padding:
-                                            const EdgeInsets.only(bottom: 6),
-                                        child: Text("• $t"),
-                                      ))
-                                  .toList(),
-                            ),
-                            actions: [
-                              TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: const Text("Close")),
-                            ],
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [scoreColor, scoreColor.withOpacity(0.7)],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: scoreColor.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
                           ),
-                        );
-                      },
-                    );
-                  },
+                        ],
+                      ),
+                      child: Text(
+                        '${s.totalScore.toStringAsFixed(0)}/100',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: Colors.white.withOpacity(0.3),
+                      size: 16,
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 16),
+                _buildMetricRow(
+                  Icons.visibility_rounded,
+                  'Eye Contact',
+                  '${s.eyeContactPct.toStringAsFixed(0)}%',
+                ),
+                const SizedBox(height: 8),
+                _buildMetricRow(
+                  Icons.face_rounded,
+                  'Face Presence',
+                  '${s.facePresencePct.toStringAsFixed(0)}%',
+                ),
+                const SizedBox(height: 8),
+                _buildMetricRow(
+                  Icons.sentiment_satisfied_rounded,
+                  'Smile',
+                  '${s.smilePct.toStringAsFixed(0)}%',
+                ),
+                const SizedBox(height: 12),
+                Divider(color: Colors.white.withOpacity(0.1)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.access_time_rounded,
+                      size: 14,
+                      color: Colors.white.withOpacity(0.5),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      _formatDate(s.createdAt),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white.withOpacity(0.5),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMetricRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 18,
+          color: const Color(0xFF6C63FF).withOpacity(0.7),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.white.withOpacity(0.7),
+          ),
+        ),
+        const Spacer(),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Color _getScoreColor(double score) {
+    if (score >= 80) return const Color(0xFF4CAF50);
+    if (score >= 60) return const Color(0xFF6C63FF);
+    if (score >= 40) return const Color(0xFFFFA726);
+    return const Color(0xFFFF6584);
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final diff = now.difference(date);
+
+    if (diff.inDays == 0) {
+      return 'Today at ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    } else if (diff.inDays == 1) {
+      return 'Yesterday';
+    } else if (diff.inDays < 7) {
+      return '${diff.inDays} days ago';
+    } else {
+      return '${date.day}/${date.month}/${date.year}';
+    }
+  }
+
+  void _showSessionDetails(MockSession s) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Color(0xFF1D1F33),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                const Text(
+                  'Coach Tips',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        _getScoreColor(s.totalScore),
+                        _getScoreColor(s.totalScore).withOpacity(0.7),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${s.totalScore.toStringAsFixed(0)}/100',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            ...s.tips.asMap().entries.map((entry) {
+              return TweenAnimationBuilder<double>(
+                duration: Duration(milliseconds: 300 + (entry.key * 100)),
+                tween: Tween(begin: 0.0, end: 1.0),
+                builder: (context, value, child) {
+                  return Transform.translate(
+                    offset: Offset(20 * (1 - value), 0),
+                    child: Opacity(
+                      opacity: value,
+                      child: child,
+                    ),
+                  );
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFF6C63FF).withOpacity(0.1),
+                        const Color(0xFF6C63FF).withOpacity(0.05),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const Color(0xFF6C63FF).withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF6C63FF),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.lightbulb_rounded,
+                          size: 16,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          entry.value,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.white,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+            ),
+            SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
+          ],
+        ),
+      ),
     );
   }
 }
