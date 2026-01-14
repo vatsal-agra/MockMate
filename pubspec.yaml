@@ -16,6 +16,7 @@ dependencies:
   shared_preferences: ^2.3.2
   google_generative_ai: ^0.4.5
   http: ^1.2.2
+  fl_chart: ^0.70.2
 
 flutter:
   uses-material-design: true

@@ -102,8 +102,14 @@ class _ResultsScreenState extends State<ResultsScreen>
               padding: const EdgeInsets.all(20),
               children: [
                 _buildScoreCard(s),
+                if (s.questionAsked != null) ...[
+                  const SizedBox(height: 20),
+                  _buildQuestionCard(s.questionAsked!),
+                ],
                 const SizedBox(height: 20),
                 _buildVideoCard(),
+                const SizedBox(height: 20),
+                _buildAdvancedFeedback(s),
                 const SizedBox(height: 20),
                 _buildMetricsCard(s),
                 const SizedBox(height: 20),
@@ -190,6 +196,47 @@ class _ResultsScreenState extends State<ResultsScreen>
     );
   }
 
+  Widget _buildQuestionCard(String question) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFF6C63FF).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFF6C63FF).withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.quiz_outlined, color: Color(0xFF6C63FF), size: 18),
+              const SizedBox(width: 12),
+              Text(
+                'THE QUESTION',
+                style: TextStyle(
+                  color: const Color(0xFF6C63FF).withOpacity(0.8),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            question,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildVideoCard() {
     final vp = _vp;
     return Container(
@@ -252,6 +299,112 @@ class _ResultsScreenState extends State<ResultsScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAdvancedFeedback(MockSession s) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1D1F33),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Advanced Feedback',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              _buildSimpleStat(
+                'Sentiment',
+                s.sentiment ?? 'Neutral',
+                Icons.emoji_emotions_outlined,
+                const Color(0xFF4CAF50),
+              ),
+              const SizedBox(width: 16),
+              _buildSimpleStat(
+                'Filler Words',
+                '${s.fillerWordsCount ?? 0}',
+                Icons.format_quote_rounded,
+                const Color(0xFFFF6584),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'TRANSCRIPT',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.4),
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 2,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(16),
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Text(
+              s.transcript ?? 'Transcription not available.',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.8),
+                fontSize: 14,
+                fontStyle: FontStyle.italic,
+                height: 1.6,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSimpleStat(String label, String value, IconData icon, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(height: 12),
+            Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.4),
+                fontSize: 11,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

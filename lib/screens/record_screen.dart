@@ -11,7 +11,10 @@ import '../services/gemini_service.dart';
 import 'results_screen.dart';
 
 class RecordScreen extends StatefulWidget {
-  const RecordScreen({super.key});
+  final String? role;
+  final String? jd;
+
+  const RecordScreen({super.key, this.role, this.jd});
 
   @override
   State<RecordScreen> createState() => _RecordScreenState();
@@ -31,6 +34,9 @@ class _RecordScreenState extends State<RecordScreen>
 
   late AnimationController _pulseController;
   late AnimationController _scaleController;
+  
+  String? _question;
+  bool _loadingQuestion = false;
 
   @override
   void initState() {
@@ -45,7 +51,23 @@ class _RecordScreenState extends State<RecordScreen>
       vsync: this,
     );
 
+    _generateQuestion();
     _initCamera();
+  }
+
+  Future<void> _generateQuestion() async {
+    if (widget.role == null && widget.jd == null) return;
+    
+    setState(() => _loadingQuestion = true);
+    final q = await GeminiService.generateQuestion(
+      role: widget.role,
+      jobDescription: widget.jd,
+    );
+    if (!mounted) return;
+    setState(() {
+      _question = q;
+      _loadingQuestion = false;
+    });
   }
 
   Future<void> _initCamera() async {
@@ -191,7 +213,11 @@ class _RecordScreenState extends State<RecordScreen>
 
     try {
       // Use Gemini to analyze the video
-      final session = await GeminiService.analyzeVideo(savedVideo, _recordingSeconds);
+      final session = await GeminiService.analyzeVideo(
+        savedVideo, 
+        _recordingSeconds,
+        questionAsked: _question,
+      );
       
       await StorageService.saveSession(session);
 
@@ -226,6 +252,7 @@ class _RecordScreenState extends State<RecordScreen>
         headStability: r.headStability,
         totalScore: r.totalScore,
         tips: r.tips,
+        questionAsked: _question,
       );
       
       await StorageService.saveSession(session);
@@ -309,6 +336,56 @@ class _RecordScreenState extends State<RecordScreen>
             child: CameraPreview(c),
           ),
         ),
+
+        // AI Question Overlay
+        if (_question != null || _loadingQuestion)
+          Positioned(
+            top: 20,
+            left: 20,
+            right: 20,
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.7),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFF6C63FF).withOpacity(0.5)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.help_outline, color: Color(0xFF6C63FF), size: 16),
+                      const SizedBox(width: 8),
+                      Text(
+                        'AI INTERVIEW QUESTION',
+                        style: TextStyle(
+                          color: const Color(0xFF6C63FF).withAlpha(150),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 2,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  if (_loadingQuestion)
+                    const Center(child: LinearProgressIndicator(minHeight: 2))
+                  else
+                    Text(
+                      _question!,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        height: 1.4,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
 
         // Recording indicator overlay
         if (_recording)

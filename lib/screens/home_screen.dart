@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'record_screen.dart';
 import 'history_screen.dart';
+import 'tips_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,6 +15,9 @@ class _HomeScreenState extends State<HomeScreen>
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  
+  final TextEditingController _roleController = TextEditingController();
+  final TextEditingController _jdController = TextEditingController();
 
   @override
   void initState() {
@@ -38,6 +42,8 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void dispose() {
     _controller.dispose();
+    _roleController.dispose();
+    _jdController.dispose();
     super.dispose();
   }
 
@@ -59,34 +65,117 @@ class _HomeScreenState extends State<HomeScreen>
         child: SafeArea(
           child: FadeTransition(
             opacity: _fadeAnimation,
-            child: SlideTransition(
-              position: _slideAnimation,
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 20),
-                    _buildHeader(),
-                    const SizedBox(height: 40),
-                    Expanded(
-                      child: Column(
-                        children: [
-                          _buildRecordCard(context),
-                          const SizedBox(height: 20),
-                          _buildHistoryCard(context),
-                        ],
-                      ),
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 20),
+                        _buildHeader(),
+                        const SizedBox(height: 32),
+                        _buildPrepCenter(),
+                        const SizedBox(height: 24),
+                        _buildRecordCard(context),
+                        const SizedBox(height: 20),
+                        _buildHistoryCard(context),
+                        const SizedBox(height: 20),
+                        _buildTipsLibraryCard(context),
+                        const SizedBox(height: 40),
+                        _buildTipCard(),
+                        const SizedBox(height: 20),
+                      ],
                     ),
-                    _buildTipCard(),
-                    const SizedBox(height: 20),
-                  ],
+                  ),
                 ),
-              ),
-            ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildPrepCenter() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1D1F33),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.psychology_outlined, color: Color(0xFF6C63FF)),
+              SizedBox(width: 12),
+              Text(
+                'Prep Center',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _buildInput(
+            controller: _roleController,
+            label: 'Target Role',
+            hint: 'e.g. Senior Software Engineer',
+            icon: Icons.work_outline_rounded,
+          ),
+          const SizedBox(height: 16),
+          _buildInput(
+            controller: _jdController,
+            label: 'Job Description (Optional)',
+            hint: 'Paste the JD here for tailored questions...',
+            icon: Icons.description_outlined,
+            maxLines: 3,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInput({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    int maxLines = 1,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.6),
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          maxLines: maxLines,
+          style: const TextStyle(color: Colors.white, fontSize: 14),
+          decoration: InputDecoration(
+            prefixIcon: Icon(icon, color: const Color(0xFF6C63FF), size: 20),
+            hintText: hint,
+            hintStyle: TextStyle(color: Colors.white.withOpacity(0.2)),
+            filled: true,
+            fillColor: Colors.black.withOpacity(0.2),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.all(16),
+          ),
+        ),
+      ],
     );
   }
 
@@ -137,7 +226,12 @@ class _HomeScreenState extends State<HomeScreen>
       child: GestureDetector(
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const RecordScreen()),
+          MaterialPageRoute(
+            builder: (_) => RecordScreen(
+              role: _roleController.text.isNotEmpty ? _roleController.text : null,
+              jd: _jdController.text.isNotEmpty ? _jdController.text : null,
+            ),
+          ),
         ),
         child: Container(
           height: 200,
@@ -323,6 +417,93 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
+  Widget _buildTipsLibraryCard(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      duration: const Duration(milliseconds: 600),
+      tween: Tween(begin: 0.0, end: 1.0),
+      builder: (context, value, child) {
+        return Transform.scale(
+          scale: 0.9 + (value * 0.1),
+          child: Opacity(
+            opacity: value,
+            child: child,
+          ),
+        );
+      },
+      child: GestureDetector(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const TipsScreen()),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1D1F33),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.1),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 15,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF4CAF50), Color(0xFF81C784)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.menu_book_rounded,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Mastery Library',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Pro tips for your interviews',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.white.withOpacity(0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: Colors.white.withOpacity(0.4),
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildTipCard() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -336,9 +517,9 @@ class _HomeScreenState extends State<HomeScreen>
       ),
       child: Row(
         children: [
-          Icon(
+          const Icon(
             Icons.lightbulb_outline_rounded,
-            color: const Color(0xFF6C63FF),
+            color: Color(0xFF6C63FF),
             size: 24,
           ),
           const SizedBox(width: 12),

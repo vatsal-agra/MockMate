@@ -1,6 +1,7 @@
 import '../models/session.dart';
 import 'package:flutter/material.dart';
 import '../services/storage.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -149,9 +150,11 @@ class _HistoryScreenState extends State<HistoryScreen>
   Widget _buildSessionList() {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: sessions.length,
+      itemCount: sessions.length + 1, // +1 for the chart
       itemBuilder: (context, i) {
-        final s = sessions[sessions.length - 1 - i]; // Reverse order
+        if (i == 0) return _buildScoreChart();
+
+        final s = sessions[sessions.length - i]; // Correct index for reversed list with offset
         return TweenAnimationBuilder<double>(
           duration: Duration(milliseconds: 300 + (i * 50)),
           tween: Tween(begin: 0.0, end: 1.0),
@@ -164,9 +167,106 @@ class _HistoryScreenState extends State<HistoryScreen>
               ),
             );
           },
-          child: _buildSessionCard(s, i),
+          child: _buildSessionCard(s, i - 1),
         );
       },
+    );
+  }
+
+  Widget _buildScoreChart() {
+    if (sessions.length < 2) return const SizedBox.shrink();
+
+    return Container(
+      height: 250,
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.fromLTRB(16, 24, 24, 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1D1F33),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Score Progression',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Expanded(
+            child: LineChart(
+              LineChartData(
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  getDrawingHorizontalLine: (value) => FlLine(
+                    color: Colors.white.withOpacity(0.05),
+                    strokeWidth: 1,
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (value, meta) => Text(
+                        value.toInt().toString(),
+                        style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10),
+                      ),
+                      reservedSize: 28,
+                    ),
+                  ),
+                  bottomTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                ),
+                borderData: FlBorderData(show: false),
+                minX: 0,
+                maxX: (sessions.length - 1).toDouble(),
+                minY: 0,
+                maxY: 100,
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: sessions.asMap().entries.map((e) {
+                      return FlSpot(e.key.toDouble(), e.value.totalScore);
+                    }).toList(),
+                    isCurved: true,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF6C63FF), Color(0xFFFF6584)],
+                    ),
+                    barWidth: 4,
+                    isStrokeCapRound: true,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) =>
+                          FlDotCirclePainter(
+                        radius: 4,
+                        color: const Color(0xFF6C63FF),
+                        strokeWidth: 2,
+                        strokeColor: Colors.white,
+                      ),
+                    ),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFF6C63FF).withOpacity(0.3),
+                          const Color(0xFF6C63FF).withOpacity(0.0),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
