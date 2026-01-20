@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'screens/home_screen.dart';
+import 'screens/splash_screen.dart';
 
 class MockMateApp extends StatelessWidget {
   const MockMateApp({super.key});
@@ -13,40 +13,39 @@ class MockMateApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0A0E21),
+        scaffoldBackgroundColor: const Color(0xFF010101),
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF6C63FF),
           brightness: Brightness.dark,
           primary: const Color(0xFF6C63FF),
           secondary: const Color(0xFFFF6584),
-          surface: const Color(0xFF1D1F33),
+          surface: const Color(0xFF0F0F0F),
         ),
         cardTheme: CardThemeData(
-          elevation: 8,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          color: const Color(0xFF1D1F33),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(color: Colors.white.withOpacity(0.05)),
+          ),
+          color: const Color(0xFF0F0F0F),
         ),
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.transparent,
           elevation: 0,
+          centerTitle: true,
           systemOverlayStyle: SystemUiOverlayStyle.light,
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF6C63FF),
+            foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            elevation: 4,
-          ),
-        ),
-        filledButtonTheme: FilledButtonThemeData(
-          style: FilledButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            elevation: 4,
+            elevation: 0,
           ),
         ),
       ),
-      home: const HomeScreen(),
+      home: const SplashScreen(),
     );
   }
 }

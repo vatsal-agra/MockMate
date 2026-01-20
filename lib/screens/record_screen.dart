@@ -13,8 +13,9 @@ import 'results_screen.dart';
 class RecordScreen extends StatefulWidget {
   final String? role;
   final String? jd;
+  final List<String>? cvQuestions;
 
-  const RecordScreen({super.key, this.role, this.jd});
+  const RecordScreen({super.key, this.role, this.jd, this.cvQuestions});
 
   @override
   State<RecordScreen> createState() => _RecordScreenState();
@@ -37,6 +38,7 @@ class _RecordScreenState extends State<RecordScreen>
   
   String? _question;
   bool _loadingQuestion = false;
+  int _currentQuestionIndex = 0; // Track which CV question is selected
 
   @override
   void initState() {
@@ -56,6 +58,16 @@ class _RecordScreenState extends State<RecordScreen>
   }
 
   Future<void> _generateQuestion() async {
+    // Priority 1: Use CV questions if available
+    if (widget.cvQuestions != null && widget.cvQuestions!.isNotEmpty) {
+      setState(() {
+        _question = widget.cvQuestions![_currentQuestionIndex];
+        _loadingQuestion = false;
+      });
+      return;
+    }
+    
+    // Priority 2: Generate from role/JD
     if (widget.role == null && widget.jd == null) return;
     
     setState(() => _loadingQuestion = true);
@@ -101,6 +113,34 @@ class _RecordScreenState extends State<RecordScreen>
         );
       }
     }
+  }
+
+  void _previousQuestion() {
+    if (widget.cvQuestions == null || widget.cvQuestions!.isEmpty) return;
+    if (_recording) return; // Don't allow changing question while recording
+    
+    setState(() {
+      if (_currentQuestionIndex > 0) {
+        _currentQuestionIndex--;
+      } else {
+        _currentQuestionIndex = widget.cvQuestions!.length - 1; // Wrap to last
+      }
+      _question = widget.cvQuestions![_currentQuestionIndex];
+    });
+  }
+
+  void _nextQuestion() {
+    if (widget.cvQuestions == null || widget.cvQuestions!.isEmpty) return;
+    if (_recording) return; // Don't allow changing question while recording
+    
+    setState(() {
+      if (_currentQuestionIndex < widget.cvQuestions!.length - 1) {
+        _currentQuestionIndex++;
+      } else {
+        _currentQuestionIndex = 0; // Wrap to first
+      }
+      _question = widget.cvQuestions![_currentQuestionIndex];
+    });
   }
 
   @override
@@ -280,14 +320,7 @@ class _RecordScreenState extends State<RecordScreen>
       ),
       body: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF0A0E21),
-              Color(0xFF1D1F33),
-            ],
-          ),
+          color: Color(0xFF010101),
         ),
         child: _initializing
             ? const Center(child: CircularProgressIndicator())
@@ -340,7 +373,7 @@ class _RecordScreenState extends State<RecordScreen>
         // AI Question Overlay
         if (_question != null || _loadingQuestion)
           Positioned(
-            top: 20,
+            top: 110,
             left: 20,
             right: 20,
             child: Container(
@@ -358,29 +391,82 @@ class _RecordScreenState extends State<RecordScreen>
                     children: [
                       const Icon(Icons.help_outline, color: Color(0xFF6C63FF), size: 16),
                       const SizedBox(width: 8),
-                      Text(
-                        'AI INTERVIEW QUESTION',
-                        style: TextStyle(
-                          color: const Color(0xFF6C63FF).withAlpha(150),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 2,
+                      Expanded(
+                        child: Text(
+                          'AI INTERVIEW QUESTION',
+                          style: TextStyle(
+                            color: const Color(0xFF6C63FF).withAlpha(150),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 2,
+                          ),
                         ),
                       ),
+                      // Show question counter if multiple CV questions
+                      if (widget.cvQuestions != null && widget.cvQuestions!.length > 1)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF6C63FF).withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '${_currentQuestionIndex + 1}/${widget.cvQuestions!.length}',
+                            style: const TextStyle(
+                              color: Color(0xFF6C63FF),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                   const SizedBox(height: 10),
                   if (_loadingQuestion)
                     const Center(child: LinearProgressIndicator(minHeight: 2))
                   else
-                    Text(
-                      _question!,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        height: 1.4,
-                      ),
+                    Row(
+                      children: [
+                        // Left arrow for previous question
+                        if (widget.cvQuestions != null && widget.cvQuestions!.length > 1 && !_recording)
+                          IconButton(
+                            onPressed: _previousQuestion,
+                            icon: const Icon(Icons.arrow_back_ios_rounded, size: 18),
+                            color: const Color(0xFF6C63FF),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        if (widget.cvQuestions != null && widget.cvQuestions!.length > 1 && !_recording)
+                          const SizedBox(width: 8),
+                        // Question text
+                        Expanded(
+                          child: Container(
+                            constraints: const BoxConstraints(maxHeight: 120),
+                            child: SingleChildScrollView(
+                              child: Text(
+                                _question!,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Right arrow for next question
+                        if (widget.cvQuestions != null && widget.cvQuestions!.length > 1 && !_recording)
+                          const SizedBox(width: 8),
+                        if (widget.cvQuestions != null && widget.cvQuestions!.length > 1 && !_recording)
+                          IconButton(
+                            onPressed: _nextQuestion,
+                            icon: const Icon(Icons.arrow_forward_ios_rounded, size: 18),
+                            color: const Color(0xFF6C63FF),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                      ],
                     ),
                 ],
               ),
@@ -390,7 +476,7 @@ class _RecordScreenState extends State<RecordScreen>
         // Recording indicator overlay
         if (_recording)
           Positioned(
-            top: 100,
+            top: 300,
             left: 0,
             right: 0,
             child: Center(
@@ -450,8 +536,8 @@ class _RecordScreenState extends State<RecordScreen>
                 end: Alignment.bottomCenter,
                 colors: [
                   Colors.transparent,
-                  const Color(0xFF0A0E21).withOpacity(0.9),
-                  const Color(0xFF0A0E21),
+                  const Color(0xFF010101).withOpacity(0.9),
+                  const Color(0xFF010101),
                 ],
               ),
             ),
@@ -472,43 +558,38 @@ class _RecordScreenState extends State<RecordScreen>
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      // Start button
-                      ScaleTransition(
-                        scale: Tween<double>(begin: 1.0, end: 0.9).animate(
-                          CurvedAnimation(
-                            parent: _scaleController,
-                            curve: Curves.easeOut,
-                          ),
-                        ),
-                        child: _buildControlButton(
-                          onPressed: _recording ? null : _start,
-                          icon: Icons.fiber_manual_record_rounded,
-                          label: 'Start',
-                          color: const Color(0xFF6C63FF),
-                          enabled: !_recording,
+                  const SizedBox(height: 32),
+                  
+                  // Modern Shutter Button
+                  GestureDetector(
+                    onTap: _recording ? _stop : _start,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white,
+                          width: 4,
                         ),
                       ),
-
-                      // Stop button
-                      ScaleTransition(
-                        scale: Tween<double>(begin: 0.9, end: 1.0).animate(
-                          CurvedAnimation(
-                            parent: _scaleController,
-                            curve: Curves.easeOut,
+                      padding: const EdgeInsets.all(4),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        decoration: BoxDecoration(
+                          color: _recording ? const Color(0xFFFF6584) : const Color(0xFF6C63FF),
+                          borderRadius: BorderRadius.circular(_recording ? 8 : 40),
+                        ),
+                        child: Center(
+                          child: Icon(
+                            _recording ? Icons.stop_rounded : Icons.videocam_rounded,
+                            color: Colors.white,
+                            size: 32,
                           ),
                         ),
-                        child: _buildControlButton(
-                          onPressed: _recording ? _stop : null,
-                          icon: Icons.stop_rounded,
-                          label: 'Stop',
-                          color: const Color(0xFFFF6584),
-                          enabled: _recording,
-                        ),
                       ),
-                    ],
+                    ),
                   ),
                   const SizedBox(height: 20),
                   Container(
@@ -543,64 +624,6 @@ class _RecordScreenState extends State<RecordScreen>
                 ],
               ),
             ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildControlButton({
-    required VoidCallback? onPressed,
-    required IconData icon,
-    required String label,
-    required Color color,
-    required bool enabled,
-  }) {
-    return Column(
-      children: [
-        Container(
-          width: 80,
-          height: 80,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: enabled
-                ? LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [color, color.withOpacity(0.7)],
-                  )
-                : null,
-            color: enabled ? null : Colors.white.withOpacity(0.1),
-            boxShadow: enabled
-                ? [
-                    BoxShadow(
-                      color: color.withOpacity(0.4),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: onPressed,
-              customBorder: const CircleBorder(),
-              child: Icon(
-                icon,
-                color: enabled ? Colors.white : Colors.white.withOpacity(0.3),
-                size: 36,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: enabled ? Colors.white : Colors.white.withOpacity(0.3),
           ),
         ),
       ],

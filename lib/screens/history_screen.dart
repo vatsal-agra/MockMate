@@ -87,15 +87,7 @@ class _HistoryScreenState extends State<HistoryScreen>
       ),
       body: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF0A0E21),
-              Color(0xFF1D1F33),
-              Color(0xFF0A0E21),
-            ],
-          ),
+          color: Color(0xFF010101),
         ),
         child: SafeArea(
           child: loading
@@ -181,8 +173,8 @@ class _HistoryScreenState extends State<HistoryScreen>
       margin: const EdgeInsets.only(bottom: 24),
       padding: const EdgeInsets.fromLTRB(16, 24, 24, 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1D1F33),
-        borderRadius: BorderRadius.circular(24),
+        color: const Color(0xFF0F0F0F),
+        borderRadius: BorderRadius.circular(28),
         border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: Column(
@@ -276,17 +268,10 @@ class _HistoryScreenState extends State<HistoryScreen>
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFF1D1F33),
-            const Color(0xFF1D1F33).withOpacity(0.8),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
+        color: const Color(0xFF0F0F0F),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withOpacity(0.05),
           width: 1,
         ),
         boxShadow: [
@@ -448,8 +433,8 @@ class _HistoryScreenState extends State<HistoryScreen>
       isScrollControlled: true,
       builder: (context) => Container(
         decoration: const BoxDecoration(
-          color: Color(0xFF1D1F33),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          color: Color(0xFF0F0F0F),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
         ),
         padding: const EdgeInsets.all(24),
         child: Column(

@@ -64,15 +64,7 @@ class TipsScreen extends StatelessWidget {
       ),
       body: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF0A0E21),
-              Color(0xFF1D1F33),
-              Color(0xFF0A0E21),
-            ],
-          ),
+          color: Color(0xFF010101),
         ),
         child: SafeArea(
           child: SingleChildScrollView(
@@ -196,10 +188,10 @@ class TipsScreen extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: const Color(0xFF1D1F33),
-          borderRadius: BorderRadius.circular(20),
+          color: const Color(0xFF0F0F0F),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: color.withOpacity(0.2),
+            color: color.withOpacity(0.15),
             width: 1,
           ),
         ),
