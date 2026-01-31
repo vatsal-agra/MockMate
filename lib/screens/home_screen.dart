@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'record_screen.dart';
 import 'history_screen.dart';
 import 'tips_screen.dart';
+import 'prep_center_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -10,14 +10,75 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
-    with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> {
+  int _currentIndex = 0;
+
+  final List<Widget> _pages = [
+    const _HomeTab(),
+    const HistoryScreen(),
+    const TipsScreen(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _pages,
+      ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F0F0F),
+          border: Border(
+            top: BorderSide(
+              color: Colors.white.withOpacity(0.05),
+              width: 1,
+            ),
+          ),
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: (index) => setState(() => _currentIndex = index),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: const Color(0xFF6C63FF),
+          unselectedItemColor: Colors.white.withOpacity(0.3),
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_rounded),
+              activeIcon: Icon(Icons.home_rounded),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.history_rounded),
+              activeIcon: Icon(Icons.history_rounded),
+              label: 'History',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.library_books_rounded),
+              activeIcon: Icon(Icons.library_books_rounded),
+              label: 'Tips',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeTab extends StatefulWidget {
+  const _HomeTab();
+
+  @override
+  State<_HomeTab> createState() => _HomeTabState();
+}
+
+class _HomeTabState extends State<_HomeTab> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
-  
-  final TextEditingController _roleController = TextEditingController();
-  final TextEditingController _jdController = TextEditingController();
 
   @override
   void initState() {
@@ -31,151 +92,128 @@ class _HomeScreenState extends State<HomeScreen>
       CurvedAnimation(parent: _controller, curve: Curves.easeOut),
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-
     _controller.forward();
   }
 
   @override
   void dispose() {
     _controller.dispose();
-    _roleController.dispose();
-    _jdController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF0A0E21),
-              Color(0xFF1D1F33),
-              Color(0xFF0A0E21),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-                child: SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 20),
-                        _buildHeader(),
-                        const SizedBox(height: 32),
-                        _buildPrepCenter(),
-                        const SizedBox(height: 24),
-                        _buildRecordCard(context),
-                        const SizedBox(height: 20),
-                        _buildHistoryCard(context),
-                        const SizedBox(height: 20),
-                        _buildTipsLibraryCard(context),
-                        const SizedBox(height: 40),
-                        _buildTipCard(),
-                        const SizedBox(height: 20),
-                      ],
-                    ),
-                  ),
-                ),
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFF010101),
+      ),
+      child: SafeArea(
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 20),
+                  _buildHeader(),
+                  const SizedBox(height: 40),
+                  _buildRecordCard(context),
+                  const SizedBox(height: 24),
+                  _buildFeatureCards(),
+                  const SizedBox(height: 24),
+                  _buildTipCard(),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildPrepCenter() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1D1F33),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildFeatureCards() {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Row(
-            children: [
-              Icon(Icons.psychology_outlined, color: Color(0xFF6C63FF)),
-              SizedBox(width: 12),
-              Text(
-                'Prep Center',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                ),
-              ),
-            ],
+          Expanded(
+            child: _buildFeatureCard(
+              icon: Icons.psychology_outlined,
+              title: 'AI-Powered',
+              description: 'Smart question generation',
+              color: const Color(0xFF6C63FF),
+            ),
           ),
-          const SizedBox(height: 20),
-          _buildInput(
-            controller: _roleController,
-            label: 'Target Role',
-            hint: 'e.g. Senior Software Engineer',
-            icon: Icons.work_outline_rounded,
-          ),
-          const SizedBox(height: 16),
-          _buildInput(
-            controller: _jdController,
-            label: 'Job Description (Optional)',
-            hint: 'Paste the JD here for tailored questions...',
-            icon: Icons.description_outlined,
-            maxLines: 3,
+          const SizedBox(width: 16),
+          Expanded(
+            child: _buildFeatureCard(
+              icon: Icons.analytics_outlined,
+              title: 'Deep Analysis',
+              description: 'Detailed feedback',
+              color: const Color(0xFFFF6584),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildInput({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
+  Widget _buildFeatureCard({
     required IconData icon,
-    int maxLines = 1,
+    required String title,
+    required String description,
+    required Color color,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.6),
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F0F0F),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: color.withOpacity(0.2),
+          width: 1,
         ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          maxLines: maxLines,
-          style: const TextStyle(color: Colors.white, fontSize: 14),
-          decoration: InputDecoration(
-            prefixIcon: Icon(icon, color: const Color(0xFF6C63FF), size: 20),
-            hintText: hint,
-            hintStyle: TextStyle(color: Colors.white.withOpacity(0.2)),
-            filled: true,
-            fillColor: Colors.black.withOpacity(0.2),
-            border: OutlineInputBorder(
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
             ),
-            contentPadding: const EdgeInsets.all(16),
+            child: Icon(
+              icon,
+              color: color,
+              size: 24,
+            ),
           ),
-        ),
-      ],
+          const SizedBox(height: 16),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Expanded(
+            child: Text(
+              description,
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.white.withOpacity(0.5),
+                height: 1.3,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -183,26 +221,32 @@ class _HomeScreenState extends State<HomeScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ShaderMask(
-          shaderCallback: (bounds) => const LinearGradient(
-            colors: [Color(0xFF6C63FF), Color(0xFFFF6584)],
-          ).createShader(bounds),
-          child: const Text(
-            'MockMate',
-            style: TextStyle(
-              fontSize: 42,
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
-              letterSpacing: -1,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            ShaderMask(
+              shaderCallback: (bounds) => const LinearGradient(
+                colors: [Color(0xFF6C63FF), Color(0xFFFF6584)],
+              ).createShader(bounds),
+              child: const Text(
+                'MockMate',
+                style: TextStyle(
+                  fontSize: 36,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: -1.5,
+                ),
+              ),
             ),
-          ),
+            // Profile icon removed
+          ],
         ),
         const SizedBox(height: 8),
         Text(
-          'Master your interview skills',
+          'Master your interview skills with AI',
           style: TextStyle(
-            fontSize: 16,
-            color: Colors.white.withOpacity(0.6),
+            fontSize: 15,
+            color: Colors.white.withOpacity(0.4),
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -211,294 +255,81 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildRecordCard(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      duration: const Duration(milliseconds: 600),
-      tween: Tween(begin: 0.0, end: 1.0),
-      builder: (context, value, child) {
-        return Transform.scale(
-          scale: 0.9 + (value * 0.1),
-          child: Opacity(
-            opacity: value,
-            child: child,
-          ),
-        );
-      },
-      child: GestureDetector(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => RecordScreen(
-              role: _roleController.text.isNotEmpty ? _roleController.text : null,
-              jd: _jdController.text.isNotEmpty ? _jdController.text : null,
-            ),
-          ),
-        ),
-        child: Container(
-          height: 200,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF6C63FF),
-                Color(0xFF5A52D5),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF6C63FF).withOpacity(0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              // Animated background circles
-              Positioned(
-                right: -20,
-                top: -20,
-                child: Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.1),
-                  ),
-                ),
-              ),
-              Positioned(
-                left: -30,
-                bottom: -30,
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.05),
-                  ),
-                ),
-              ),
-              // Content
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.videocam_rounded,
-                        color: Colors.white,
-                        size: 32,
-                      ),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Record Mock Answer',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Get instant AI-powered feedback',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.white.withOpacity(0.8),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const PrepCenterScreen(),
         ),
       ),
-    );
-  }
-
-  Widget _buildHistoryCard(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      duration: const Duration(milliseconds: 600),
-      tween: Tween(begin: 0.0, end: 1.0),
-      builder: (context, value, child) {
-        return Transform.scale(
-          scale: 0.9 + (value * 0.1),
-          child: Opacity(
-            opacity: value,
-            child: child,
+      child: Container(
+        height: 180,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF6C63FF),
+              Color(0xFF8E87FF),
+            ],
           ),
-        );
-      },
-      child: GestureDetector(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const HistoryScreen()),
-        ),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1D1F33),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.1),
-              width: 1,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF6C63FF).withOpacity(0.3),
+              blurRadius: 24,
+              offset: const Offset(0, 12),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              right: -30,
+              top: -30,
+              child: Container(
+                width: 140,
+                height: 140,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFFF6584), Color(0xFFFF8FA3)],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.insights_rounded,
-                  color: Colors.white,
-                  size: 28,
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(0.1),
                 ),
               ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'View History',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Track your improvement',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.white.withOpacity(0.6),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                color: Colors.white.withOpacity(0.4),
-                size: 20,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTipsLibraryCard(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      duration: const Duration(milliseconds: 600),
-      tween: Tween(begin: 0.0, end: 1.0),
-      builder: (context, value, child) {
-        return Transform.scale(
-          scale: 0.9 + (value * 0.1),
-          child: Opacity(
-            opacity: value,
-            child: child,
-          ),
-        );
-      },
-      child: GestureDetector(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const TipsScreen()),
-        ),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1D1F33),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.1),
-              width: 1,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF4CAF50), Color(0xFF81C784)],
+            Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.videocam_rounded,
+                    color: Colors.white,
+                    size: 40,
                   ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.menu_book_rounded,
-                  color: Colors.white,
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Mastery Library',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Start Mock Interview',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Pro tips for your interviews',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.white.withOpacity(0.6),
-                      ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Instant analysis & feedback',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white.withOpacity(0.8),
+                      fontWeight: FontWeight.w500,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                color: Colors.white.withOpacity(0.4),
-                size: 20,
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -506,30 +337,52 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildTipCard() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF6C63FF).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
+        color: const Color(0xFF0F0F0F),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: const Color(0xFF6C63FF).withOpacity(0.3),
+          color: const Color(0xFF6C63FF).withOpacity(0.1),
           width: 1,
         ),
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.lightbulb_outline_rounded,
-            color: Color(0xFF6C63FF),
-            size: 24,
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF6C63FF).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(
+              Icons.lightbulb_rounded,
+              color: Color(0xFF6C63FF),
+              size: 24,
+            ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
-            child: Text(
-              'Keep camera at eye level with good lighting',
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.white.withOpacity(0.8),
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Daily Tip',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF6C63FF),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Keep camera at eye level with good lighting.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.white.withOpacity(0.7),
+                    height: 1.4,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

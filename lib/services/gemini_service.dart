@@ -2,12 +2,13 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import '../models/session.dart';
+import '../secrets.dart';
 
 class GeminiService {
   // IMPORTANT: This key is now local. For production, use --dart-define=GEMINI_API_KEY=your_key
   static const _apiKey = String.fromEnvironment(
     'GEMINI_API_KEY',
-    defaultValue: 'AIzaSyBm8e4PjEEg1AolTyTPsbonFd4ef8U5Q5U',
+    defaultValue: geminiApiKey,
   );
   
   static final _model = GenerativeModel(
@@ -21,6 +22,20 @@ class GeminiService {
     ],
   );
 
+  static Future<T> _retryWithBackoff<T>(Future<T> Function() operation, {int maxRetries = 3}) async {
+    for (int i = 0; i < maxRetries; i++) {
+      try {
+        return await operation();
+      } catch (e) {
+        if (i == maxRetries - 1) rethrow;
+        final delay = Duration(seconds: (1 << i)); // 1, 2, 4 seconds
+        print('⚠️ API Busy/Error, retrying in ${delay.inSeconds}s... (Attempt ${i + 1}/$maxRetries)');
+        await Future.delayed(delay);
+      }
+    }
+    throw Exception('Failed after $maxRetries retries');
+  }
+
   static Future<String> generateQuestion({String? jobDescription, String? role}) async {
     final prompt = """
       You are an expert interviewer. 
@@ -32,8 +47,10 @@ class GeminiService {
 
     try {
       final content = [Content.text(prompt)];
-      final response = await _model.generateContent(content);
-      return response.text?.trim() ?? "Tell me about a difficult challenge you faced and how you handled it.";
+      return await _retryWithBackoff(() async {
+        final response = await _model.generateContent(content);
+        return response.text?.trim() ?? "Tell me about a difficult challenge you faced and how you handled it.";
+      });
     } catch (e) {
       print('Error generating question: $e');
       return "Tell me about yourself and your background.";
@@ -41,6 +58,14 @@ class GeminiService {
   }
 
   static Future<MockSession> analyzeVideo(File videoFile, int durationSeconds, {String? questionAsked}) async {
+    return _analyzeVideoInternal(videoFile, durationSeconds, questionAsked: questionAsked);
+  }
+
+  static Future<MockSession> analyzeUploadedVideo(File videoFile, int durationSeconds, {String? questionAsked}) async {
+    return _analyzeVideoInternal(videoFile, durationSeconds, questionAsked: questionAsked);
+  }
+
+  static Future<MockSession> _analyzeVideoInternal(File videoFile, int durationSeconds, {String? questionAsked}) async {
     final fileSize = await videoFile.length();
     print('📂 Reading video file: ${videoFile.path} (${(fileSize / 1024 / 1024).toStringAsFixed(2)} MB)');
     final videoBytes = await videoFile.readAsBytes();
@@ -81,34 +106,95 @@ class GeminiService {
     try {
       print('🚀 Sending video to Gemini...');
       
-      final response = await _model.generateContent(prompt).timeout(
-        const Duration(seconds: 300),
-        onTimeout: () => throw Exception('Gemini analysis timed out after 5 minutes.'),
-      );
-      
-      final text = response.text;
-      if (text == null) throw Exception('Empty response from Gemini');
-      
-      final jsonString = _extractJson(text);
-      final Map<String, dynamic> data = jsonDecode(jsonString);
+      return await _retryWithBackoff(() async {
+        final response = await _model.generateContent(prompt).timeout(
+          const Duration(seconds: 300),
+          onTimeout: () => throw Exception('Gemini analysis timed out after 5 minutes.'),
+        );
+        
+        final text = response.text;
+        if (text == null) throw Exception('Empty response from Gemini');
+        
+        final jsonString = _extractJson(text);
+        final Map<String, dynamic> data = jsonDecode(jsonString);
 
-      return MockSession(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        createdAt: DateTime.now(),
-        durationSeconds: durationSeconds, 
-        facePresencePct: (data['facePresencePct'] as num).toDouble(),
-        eyeContactPct: (data['eyeContactPct'] as num).toDouble(),
-        smilePct: (data['smilePct'] as num).toDouble(),
-        headStability: (data['headStability'] as num).toDouble(),
-        totalScore: (data['totalScore'] as num).toDouble(),
-        tips: List<String>.from(data['tips']),
-        transcript: data['transcript'],
-        fillerWordsCount: data['fillerWordsCount'],
-        sentiment: data['sentiment'],
-        questionAsked: questionAsked,
-      );
+        return MockSession(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          createdAt: DateTime.now(),
+          durationSeconds: durationSeconds, 
+          facePresencePct: (data['facePresencePct'] as num).toDouble(),
+          eyeContactPct: (data['eyeContactPct'] as num).toDouble(),
+          smilePct: (data['smilePct'] as num).toDouble(),
+          headStability: (data['headStability'] as num).toDouble(),
+          totalScore: (data['totalScore'] as num).toDouble(),
+          tips: List<String>.from(data['tips']),
+          transcript: data['transcript'],
+          fillerWordsCount: data['fillerWordsCount'],
+          sentiment: data['sentiment'],
+          questionAsked: questionAsked,
+        );
+      });
     } catch (e) {
       print('❌ ERROR in GeminiService: $e');
+      rethrow;
+    }
+  }
+
+  static Future<List<String>> generateQuestionsFromCV(File cvFile) async {
+    try {
+      print('📄 Reading CV file: ${cvFile.path}');
+      final cvBytes = await cvFile.readAsBytes();
+      final fileExtension = cvFile.path.split('.').last.toLowerCase();
+      
+      String mimeType;
+      if (fileExtension == 'pdf') {
+        mimeType = 'application/pdf';
+      } else if (fileExtension == 'txt') {
+        mimeType = 'text/plain';
+      } else if (fileExtension == 'doc' || fileExtension == 'docx') {
+        mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      } else {
+        throw Exception('Unsupported file format: $fileExtension');
+      }
+
+      final prompt = [
+        Content.multi([
+          TextPart("""
+            You are an expert technical interviewer. Analyze this CV/Resume and generate 5 challenging, 
+            role-specific interview questions based on the candidate's experience, skills, and background.
+            
+            The questions should:
+            1. Be specific to their listed experience and projects
+            2. Test both technical depth and practical application
+            3. Be realistic questions an interviewer would actually ask
+            4. Cover different aspects (technical skills, past projects, problem-solving, etc.)
+            
+            Return ONLY a JSON object with this structure:
+            {
+              "questions": ["question 1", "question 2", "question 3", "question 4", "question 5"]
+            }
+          """),
+          DataPart(mimeType, cvBytes),
+        ]),
+      ];
+
+      print('🚀 Sending CV to Gemini for question generation...');
+      return await _retryWithBackoff(() async {
+        final response = await _model.generateContent(prompt).timeout(
+          const Duration(seconds: 60),
+          onTimeout: () => throw Exception('CV analysis timed out'),
+        );
+
+        final text = response.text;
+        if (text == null) throw Exception('Empty response from Gemini');
+
+        final jsonString = _extractJson(text);
+        final Map<String, dynamic> data = jsonDecode(jsonString);
+        
+        return List<String>.from(data['questions'] ?? []);
+      });
+    } catch (e) {
+      print('❌ ERROR generating questions from CV: $e');
       rethrow;
     }
   }

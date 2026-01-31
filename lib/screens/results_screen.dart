@@ -85,15 +85,7 @@ class _ResultsScreenState extends State<ResultsScreen>
       ),
       body: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF0A0E21),
-              Color(0xFF1D1F33),
-              Color(0xFF0A0E21),
-            ],
-          ),
+          color: Color(0xFF010101),
         ),
         child: SafeArea(
           child: FadeTransition(
@@ -241,10 +233,10 @@ class _ResultsScreenState extends State<ResultsScreen>
     final vp = _vp;
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1D1F33),
-        borderRadius: BorderRadius.circular(20),
+        color: const Color(0xFF0F0F0F),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withOpacity(0.05),
         ),
         boxShadow: [
           BoxShadow(
@@ -307,8 +299,8 @@ class _ResultsScreenState extends State<ResultsScreen>
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF1D1F33),
-        borderRadius: BorderRadius.circular(24),
+        color: const Color(0xFF0F0F0F),
+        borderRadius: BorderRadius.circular(28),
         border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: Column(
@@ -413,10 +405,10 @@ class _ResultsScreenState extends State<ResultsScreen>
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF1D1F33),
-        borderRadius: BorderRadius.circular(20),
+        color: const Color(0xFF0F0F0F),
+        borderRadius: BorderRadius.circular(28),
         border: Border.all(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withOpacity(0.05),
         ),
       ),
       child: Column(
