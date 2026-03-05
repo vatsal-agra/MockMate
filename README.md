@@ -95,3 +95,8 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
 **MockMate** — *Turning interview anxiety into objective performance data.*
+
+---
+Author: Vatsal Agrawal
+GitHub: github.com/vatsal-agra
+LinkedIn: linkedin.com/in/vatsal-agrawal-a7a9641b0
